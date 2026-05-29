@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Dashboard } from "@/components/Dashboard";
+import { Sidebar } from "@/components/Sidebar";
 
 type Speaker = {
   label: string;
@@ -264,7 +264,7 @@ function App() {
         </div>
       </div>
 
-        <Dashboard />
+        <Sidebar />
       </div>
     </div>
   );
