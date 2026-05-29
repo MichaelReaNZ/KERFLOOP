@@ -75,3 +75,42 @@ export const getLastFelt = query({
     }));
   },
 });
+
+// Issue #12: getBudgetRemaining
+// The meter. Shows stakes: spent, remaining, daily burn rate.
+
+export const getBudgetRemaining = query({
+  args: {},
+  handler: async (ctx) => {
+    // Sum all token_usage entries for cost tracking
+    const usage = await ctx.db
+      .query("token_usage")
+      .collect();
+
+    const spent_usd = usage.reduce((sum, row) => sum + (row.cost_usd || 0), 0);
+
+    // Get current budget period (most recent)
+    const budget = await ctx.db
+      .query("budget")
+      .order("period_start", "desc")
+      .first();
+
+    if (!budget) {
+      return { spent_usd, remaining_usd: 0, daily_rate: 0, error: "No budget set" };
+    }
+
+    const remaining_usd = Math.max(0, budget.total_budget_usd - budget.spent_usd);
+    const now = Date.now();
+    const days_left = Math.max(0, (budget.period_end - now) / (1000 * 60 * 60 * 24));
+    const daily_rate = days_left > 0 ? remaining_usd / days_left : 0;
+
+    return {
+      spent_usd,
+      remaining_usd,
+      daily_rate,
+      period_start: budget.period_start,
+      period_end: budget.period_end,
+      days_left,
+    };
+  },
+});
