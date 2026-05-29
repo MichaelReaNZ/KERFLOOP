@@ -12,6 +12,7 @@ import type * as chat from "../chat.js";
 import type * as consultant from "../consultant.js";
 import type * as models from "../models.js";
 import type * as prompts from "../prompts.js";
+import type * as strainExtractor from "../strainExtractor.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   consultant: typeof consultant;
   models: typeof models;
   prompts: typeof prompts;
+  strainExtractor: typeof strainExtractor;
 }>;
 
 /**
