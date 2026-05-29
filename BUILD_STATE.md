@@ -5,7 +5,9 @@
 **Schemas:** ✅ Live and typechecking
 **Guardrails:** ✅ Locked into system prompt
 **Extractor:** ✅ Strain detector live, all 6 patterns tested
-**Next steps:** Read queries (#5-7), write debt mutation (#8), warmth math (#9)
+**Queries:** ✅ Waking ritual queries (#5-7) + budget meter (#12)
+**Mutations:** ✅ Write debt (#8), felt audit (#10), token logging (#11)
+**Next steps:** Warmth math (#9 – held provisionally), record findings (#13), first findings (#14 – deferred HITL)
 
 ## What's Built
 
@@ -81,13 +83,14 @@ Five tables live:
 
 **Next to build:**
 1. ✅ #15: Strain extractor (complete, all tests pass)
-2. #5-7: Read queries (reddest debts, have-I-cut-here-before, what-did-last-me-say)
-3. #8: Write debt
-4. #9: Warmth math (held provisionally for real-data observation)
-5. #10: Felt audit (now unblocked; depends on #15 ✅)
-6. #11-12: Instrumentation & meter query
-7. #13: Record findings (now unblocked; depends on #15 ✅)
-8. #14: First findings entry (deferred, start after #5-8 prove the order works)
+2. ✅ #5-7: Read queries (reddest debts, have-I-cut-here-before, what-did-last-me-say)
+3. ✅ #8: Write debt (CRUD insert)
+4. ✅ #10: Felt audit (runs extractor on felt itself)
+5. ✅ #11: Instrumentation (token logging to OpenRouter calls)
+6. ✅ #12: Budget meter query (spent/remaining/daily_rate)
+7. #9: Warmth math (held provisionally for real-data observation)
+8. #13: Record findings (now unblocked; depends on #15 ✅)
+9. #14: First findings entry (deferred, start after real slices prove the order works)
 
 ### TBD — Supporting Systems
 Not yet in issues:
