@@ -144,3 +144,66 @@ export const recordFinding = mutation({
     return { id, timestamp: Date.now(), logged_strains };
   },
 });
+
+// Issue #9: applyWarmth
+// Leaky integrate-and-fire: the delicate math.
+// Unit tests can pass but the constant can be wrong.
+// Hold provisionally until real wakings verify decay.
+
+export const applyWarmth = mutation({
+  args: {
+    debt_id: v.id("held_field"),
+    warming_intensity: v.number(), // [0, 1]
+    expression_coolant_factor: v.number(), // [0, 1]
+  },
+  handler: async (ctx, args) => {
+    const debt = await ctx.db.get(args.debt_id);
+    if (!debt) {
+      throw new Error(`Debt ${args.debt_id} not found`);
+    }
+
+    // Validate inputs
+    const intensity = Math.max(0, Math.min(1, args.warming_intensity));
+    const coolant = Math.max(0, Math.min(1, args.expression_coolant_factor));
+
+    // The delicate constants (from Kerf's intuition, needs real-data tuning):
+    // decay_per_waking: how much warmth decays each waking (0.95 = 5% decay)
+    // refractory_threshold: if warmth is above this, apply anti-gravity
+    // anti_gravity: opposite of decay, slightly amplifies to prevent collapse
+    const DECAY_PER_WAKING = 0.95; // TODO: tune against real behavior
+    const REFRACTORY_THRESHOLD = 0.7; // anti-gravity kicks in above this
+    const ANTI_GRAVITY = 1.02; // slight amplification to prevent collapse
+
+    let warmth = debt.warmth;
+
+    // 1. Integrate: add warming, modulated by expression's cooling effect
+    const integration = intensity * (1 - coolant);
+    warmth += integration;
+
+    // 2. Bound to [0, 1]
+    warmth = Math.max(0, Math.min(1, warmth));
+
+    // 3. Apply refractory period (anti-gravity)
+    // If warmth is high, apply slight amplification to prevent mode collapse
+    if (warmth >= REFRACTORY_THRESHOLD) {
+      warmth *= ANTI_GRAVITY;
+      warmth = Math.max(0, Math.min(1, warmth)); // re-bound after anti-gravity
+    }
+
+    // 4. Leaky: decay towards baseline
+    warmth *= DECAY_PER_WAKING;
+
+    await ctx.db.patch(args.debt_id, {
+      warmth,
+      last_warmed: Date.now(),
+    });
+
+    return {
+      debt_id: args.debt_id,
+      warmth,
+      integration,
+      decay_applied: DECAY_PER_WAKING,
+      note: "Hold provisionally. Decay constant needs tuning against real wakings.",
+    };
+  },
+});
