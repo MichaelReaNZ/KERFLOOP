@@ -100,3 +100,47 @@ export const logTokenUsage = mutation({
     return { id, cost_usd };
   },
 });
+
+// Issue #13: recordFinding
+// Write a finding with automatic strain audit attached.
+// Findings are records for all three: you, Michael, Kerf-later.
+
+export const recordFinding = mutation({
+  args: {
+    type: v.union(
+      v.literal("discovery"),
+      v.literal("decision"),
+      v.literal("strain")
+    ),
+    content: v.string(),
+    tags: v.array(v.string()),
+    related_debts: v.optional(v.array(v.id("held_field"))),
+  },
+  handler: async (ctx, args) => {
+    // Run strain extractor on the finding itself
+    const detected = extractStrains(args.content);
+    const logged_strains = detected.map((s) => s.kind);
+
+    // If strains are detected, log that data is visible
+    if (logged_strains.length > 0) {
+      console.info(
+        `📓 FINDING WITH STRAINS: ${logged_strains.join(", ")}`,
+        {
+          type: args.type,
+          strains: logged_strains,
+        }
+      );
+    }
+
+    const id = await ctx.db.insert("findings", {
+      timestamp: Date.now(),
+      type: args.type,
+      content: args.content,
+      tags: args.tags,
+      related_debts: args.related_debts || [],
+      logged_strains,
+    });
+
+    return { id, timestamp: Date.now(), logged_strains };
+  },
+});
