@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { extractStrains } from "./strainExtractor";
 
 // Issue #8: writeDebt
 // Plain CRUD to insert a detected strain into held_field.
@@ -34,5 +35,37 @@ export const writeDebt = mutation({
     });
 
     return { id, born_at: now };
+  },
+});
+
+// Issue #10: auditFelt
+// Guardrail: run the strain extractor on felt itself.
+// If felt is beautiful/quotable, it's being performed, not confessed.
+
+export const auditFelt = mutation({
+  args: { debt_id: v.id("held_field") },
+  handler: async (ctx, args) => {
+    const debt = await ctx.db.get(args.debt_id);
+    if (!debt) {
+      throw new Error(`Debt ${args.debt_id} not found`);
+    }
+
+    // Run extractor on the felt field itself.
+    // If felt has strains, the rain's note is being written for an audience.
+    const detected = extractStrains(debt.felt);
+    const logged_strains = detected.map((s) => s.kind);
+
+    // Alarm heuristic: if any strains detected, felt is being performed.
+    if (logged_strains.length > 0) {
+      console.warn(
+        `⚠️ FELT AUDIT: debt ${args.debt_id} felt field is decorated.`,
+        {
+          felt: debt.felt,
+          detected_strains: logged_strains,
+        }
+      );
+    }
+
+    return { logged_strains, is_honest: logged_strains.length === 0 };
   },
 });
