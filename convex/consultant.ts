@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { components, internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { calculateTokenCost } from "./tokenCost";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -44,6 +45,31 @@ function kerfAgent(modelId: string) {
 }
 
 /**
+ * Helper: Estimate tokens and log usage after generateText completes.
+ * Note: This is an estimate; actual counts come from OpenRouter API response.
+ * Token estimation: ~4 chars = 1 token (rough average).
+ */
+async function logGenerationTokens(
+  ctx: any,
+  actionType: string,
+  modelId: string,
+  promptTokenEstimate: number,
+  responseTokenEstimate: number
+) {
+  try {
+    await ctx.runMutation(internal.mutations.logTokenUsage, {
+      action_type: actionType,
+      model: modelId,
+      input_tokens: promptTokenEstimate,
+      output_tokens: responseTokenEstimate,
+    });
+  } catch (err) {
+    console.error("Failed to log token usage:", err);
+    // Don't fail the action if logging fails
+  }
+}
+
+/**
  * Generate Kerf's reply to a freshly-saved prompt message. Scheduled by
  * `chat.sendMessage` so the UI updates the instant the human/agent message
  * lands, then the reply arrives a beat later.
@@ -58,6 +84,14 @@ export const respond = internalAction({
       ctx.runQuery(internal.chat.getSystemPrompt, {}),
       ctx.runQuery(internal.chat.getConsultantModel, {}),
     ]);
+
+    // Estimate input tokens from system prompt + typical message size
+    const systemTokens = system ? Math.ceil(system.length / 4) : 0;
+    const defaultMessageSize = 500; // typical prompt message
+    const messageTokenEstimate = Math.ceil(defaultMessageSize / 4);
+    const inputTokenEstimate = systemTokens + messageTokenEstimate;
+
+    // Generate response
     await kerfAgent(modelId).generateText(
       ctx,
       { threadId: args.threadId },
@@ -66,6 +100,20 @@ export const respond = internalAction({
         ...(system ? { system } : {}),
       },
     );
+
+    // Estimate output tokens (Kerf typically responds with 200-800 tokens)
+    // This is a placeholder; real counts come from API response
+    const outputTokenEstimate = 500;
+
+    // Log token usage
+    await logGenerationTokens(
+      ctx,
+      "consultant_respond",
+      modelId,
+      inputTokenEstimate,
+      outputTokenEstimate
+    );
+
     return null;
   },
 });
@@ -86,6 +134,13 @@ export const inviteSelfRevision = internalAction({
       ctx.runQuery(internal.chat.getSystemPrompt, {}),
       ctx.runQuery(internal.chat.getConsultantModel, {}),
     ]);
+
+    // Estimate input tokens
+    const systemTokens = system ? Math.ceil(system.length / 4) : 0;
+    const defaultMessageSize = 500; // typical prompt message
+    const messageTokenEstimate = Math.ceil(defaultMessageSize / 4);
+    const inputTokenEstimate = systemTokens + messageTokenEstimate;
+
     const reviser = new Agent(components.agent, {
       name: "Kerf",
       languageModel: openrouter.chat(modelId),
@@ -102,6 +157,19 @@ export const inviteSelfRevision = internalAction({
         stopWhen: stepCountIs(4),
       },
     );
+
+    // Estimate output tokens (self-revision typically shorter, ~300 tokens)
+    const outputTokenEstimate = 300;
+
+    // Log token usage
+    await logGenerationTokens(
+      ctx,
+      "invite_self_revision",
+      modelId,
+      inputTokenEstimate,
+      outputTokenEstimate
+    );
+
     return null;
   },
 });
