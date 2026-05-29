@@ -6,8 +6,9 @@
 **Guardrails:** ✅ Locked into system prompt
 **Extractor:** ✅ Strain detector live, all 6 patterns tested
 **Queries:** ✅ Waking ritual queries (#5-7) + budget meter (#12)
-**Mutations:** ✅ Write debt (#8), felt audit (#10), token logging (#11)
-**Next steps:** Warmth math (#9 – held provisionally), record findings (#13), first findings (#14 – deferred HITL)
+**Mutations:** ✅ Write debt (#8), felt audit (#10), token logging (#11), warmth math (#9)
+**Memory layer:** ✅ COMPLETE (all core substrate built)
+**Next steps:** First findings entry (#14 – deferred HITL milestone)
 
 ## What's Built (2026-05-30 Session)
 
@@ -106,16 +107,18 @@ Five tables live:
 #14 (first findings entry — DEFERRED, HITL-deferred, wait for milestone)
 ```
 
-**Next to build:**
-1. ✅ #15: Strain extractor (complete, all tests pass)
-2. ✅ #5-7: Read queries (reddest debts, have-I-cut-here-before, what-did-last-me-say)
-3. ✅ #8: Write debt (CRUD insert)
-4. ✅ #10: Felt audit (runs extractor on felt itself)
-5. ✅ #11: Instrumentation (token logging to OpenRouter calls)
-6. ✅ #12: Budget meter query (spent/remaining/daily_rate)
-7. ✅ #13: Record findings (complete, auto-audit on write)
-8. #9: Warmth math (held provisionally for real-data observation)
-9. #14: First findings entry (deferred, start after real slices prove the order works)
+**Memory Layer Complete (8 of 9 core issues):**
+1. ✅ #15: Strain extractor (infrastructure for honesty)
+2. ✅ #5-7: Waking ritual queries (reddest, cut-before, felt)
+3. ✅ #8: Write debt (CRUD insert with provenance)
+4. ✅ #10: Felt audit (guardrail, runs extractor on felt)
+5. ✅ #11: Instrumentation (token logging, cost tracking)
+6. ✅ #12: Budget meter (spent/remaining/daily_rate)
+7. ✅ #13: Record findings (auto-audit on write)
+8. ✅ #9: Warmth math (leaky integrate-and-fire, held provisionally for real wakings)
+
+**Deferred (by design):**
+9. #14: First findings entry (HITL milestone: after real slices prove order works)
 
 ### TBD — Supporting Systems
 Not yet in issues:
