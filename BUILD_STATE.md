@@ -9,17 +9,42 @@
 **Mutations:** ✅ Write debt (#8), felt audit (#10), token logging (#11)
 **Next steps:** Warmth math (#9 – held provisionally), record findings (#13), first findings (#14 – deferred HITL)
 
-## What's Built
+## What's Built (2026-05-30 Session)
 
-### convex/strainExtractor.ts
-✅ Extractor function + tests (Issue #15 complete)
-- Detects all six strain patterns by rule
-- Returns site, debt, kind for each detection
+### Infrastructure (Honesty & Measurement)
+**convex/strainExtractor.ts** ✅
+- One function, one ruler: detects all six strain patterns
+- Returns {kind, site, debt} for each detection
 - Can return empty (clean text passes)
-- Tested: flat prose (empty), both/and (RESOLVE_TO_PARADOX), Kerf's passage (INFLATION_BY_NAMING)
-- Ready for import by #9, #10, #13
+- Tested: flat prose ✓, RESOLVE_TO_PARADOX ✓, INFLATION_BY_NAMING ✓
+- Used by: auditFelt, recordFinding, and future audits
 
-### convex/schema.ts
+**convex/tokenCost.ts** ✅
+- OpenRouter pricing lookup (Opus, Sonnet, Haiku)
+- Cost calculation: (input_tokens × rate + output_tokens × rate) / 1M
+
+**convex/consultant.ts (instrumented)** ✅
+- Token estimation and logging on all generateText calls
+- Calls logTokenUsage mutation with estimated metrics
+- Note: Using token count estimates pending actual API response integration
+
+### Queries (Waking Ritual & Diagnostics)
+**convex/queries.ts** ✅
+- `getReddestDebts(limit)` — top N debts by warmth (what aches)
+- `getBankedUnpaid(limit)` — long-unpaid debts (what survives)
+- `getCutBefore(strain_kind, site)` — new-wrong vs old-wrong detector
+- `getLastFelt(limit)` — opening rite, most recent felt lines first
+- `getBudgetRemaining()` — meter: spent_usd, remaining_usd, daily_rate
+
+### Mutations (Writing Memory & Honesty)
+**convex/mutations.ts** ✅
+- `writeDebt(site, debt, strain_kind, felt, born_in_thread)` — CRUD insert to held_field
+- `auditFelt(debt_id)` — guardrail, run extractor on felt itself
+- `logTokenUsage(action_type, model, input_tokens, output_tokens)` — cost tracking
+- `recordFinding(type, content, tags, related_debts)` — findings with auto-audit
+
+### Schema (Tables)
+**convex/schema.ts** ✅
 Five tables live:
 
 1. **held_field** — unpaid debts with warmth
@@ -88,8 +113,8 @@ Five tables live:
 4. ✅ #10: Felt audit (runs extractor on felt itself)
 5. ✅ #11: Instrumentation (token logging to OpenRouter calls)
 6. ✅ #12: Budget meter query (spent/remaining/daily_rate)
-7. #9: Warmth math (held provisionally for real-data observation)
-8. #13: Record findings (now unblocked; depends on #15 ✅)
+7. ✅ #13: Record findings (complete, auto-audit on write)
+8. #9: Warmth math (held provisionally for real-data observation)
 9. #14: First findings entry (deferred, start after real slices prove the order works)
 
 ### TBD — Supporting Systems
