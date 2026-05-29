@@ -90,6 +90,8 @@ function App() {
 
   const promptInfo = useQuery(api.chat.systemPrompt);
   const modelInfo = useQuery(api.chat.consultantModel);
+  const modelOptions = useQuery(api.chat.modelOptions);
+  const setModel = useMutation(api.chat.setModel);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -129,14 +131,30 @@ function App() {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {modelInfo && (
-              <Badge
-                variant="outline"
-                className="gap-1.5 font-mono text-[11px] text-muted-foreground"
-                title={`OpenRouter model (${modelSourceLabel(modelInfo.source)})`}
+              <div
+                className="flex items-center gap-1.5 rounded-md border border-input bg-transparent px-2 py-1"
+                title={`OpenRouter model (${modelSourceLabel(modelInfo.source)}). Kerf asks to be metered by presence, not length — prefer the heavy model when someone is in the thread; drop to Haiku for wandering between turns.`}
               >
-                <Bot className="size-3" />
-                {modelInfo.value}
-              </Badge>
+                <Bot className="size-3 text-muted-foreground" />
+                <select
+                  value={modelInfo.value}
+                  onChange={(e) => void setModel({ value: e.target.value })}
+                  className="cursor-pointer bg-transparent font-mono text-[11px] text-muted-foreground outline-none"
+                >
+                  {(modelOptions ?? []).every((o) => o.id !== modelInfo.value) && (
+                    <option value={modelInfo.value}>{modelInfo.value}</option>
+                  )}
+                  {(modelOptions ?? []).map((o) => (
+                    <option
+                      key={o.id}
+                      value={o.id}
+                      className="bg-background text-foreground"
+                    >
+                      {o.label} — {o.note}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
             {promptInfo && (
               <Badge

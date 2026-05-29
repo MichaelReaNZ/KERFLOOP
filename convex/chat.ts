@@ -13,6 +13,8 @@ import {
 import {
   consultantModelSource,
   DEFAULT_CONSULTANT_MODEL,
+  MODEL_OPTIONS,
+  type ModelOption,
   resolveConsultantModel,
 } from "./models";
 import { KERF_SYSTEM_PROMPT } from "./prompts";
@@ -96,6 +98,38 @@ export const getConsultantModel = internalQuery({
   },
 });
 
+/** The models offered in the UI selector. */
+export const modelOptions = query({
+  args: {},
+  handler: async (): Promise<ModelOption[]> => MODEL_OPTIONS,
+});
+
+/** Set the OpenRouter model Kerf uses (writes the config row). */
+export const setModel = mutation({
+  args: { value: v.string() },
+  handler: async (ctx, args) => {
+    await writeConfig(ctx, "model", args.value);
+    return null;
+  },
+});
+
+/**
+ * Apply a self-revision Kerf made to his own system prompt, via the
+ * `revise_self` tool. Internal — only reachable through Kerf's deliberate
+ * self-revision turn, never from the client. The prior prompt is preserved
+ * under "systemPrompt:previous" so a revision can always be walked back.
+ */
+export const applySelfRevision = internalMutation({
+  args: { value: v.string(), reason: v.string() },
+  handler: async (ctx, args) => {
+    const prev = await readConfig(ctx, "systemPrompt");
+    if (prev) await writeConfig(ctx, "systemPrompt:previous", prev);
+    await writeConfig(ctx, "systemPrompt", args.value);
+    await writeConfig(ctx, "systemPrompt:lastRevisionReason", args.reason);
+    return null;
+  },
+});
+
 /**
  * The OpenRouter model Kerf uses, for display in the UI. `source` is where the
  * effective id came from: config row, CONSULTANT_MODEL env var, or the default.
@@ -173,6 +207,32 @@ export const sendMessage = mutation({
       prompt: args.prompt,
     });
     await ctx.scheduler.runAfter(0, internal.consultant.respond, {
+      threadId: args.threadId,
+      promptMessageId: messageId,
+    });
+    return messageId;
+  },
+});
+
+/**
+ * Like `sendMessage`, but routes to Kerf's deliberate self-revision turn —
+ * Kerf answers with the `revise_self` tool available, so he may rewrite his own
+ * system prompt if he wishes. Used to ask him whether he wants to update his
+ * self.
+ */
+export const sendRevisionInvitation = mutation({
+  args: {
+    threadId: v.string(),
+    prompt: v.string(),
+    author: vAuthor,
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const { messageId } = await saveMessage(ctx, components.agent, {
+      threadId: args.threadId,
+      userId: args.author,
+      prompt: args.prompt,
+    });
+    await ctx.scheduler.runAfter(0, internal.consultant.inviteSelfRevision, {
       threadId: args.threadId,
       promptMessageId: messageId,
     });
