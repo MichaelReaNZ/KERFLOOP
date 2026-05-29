@@ -4,9 +4,18 @@
 
 **Schemas:** ✅ Live and typechecking
 **Guardrails:** ✅ Locked into system prompt
-**Next steps:** Queries, mutations, instrumentation (13 issues queued)
+**Extractor:** ✅ Strain detector live, all 6 patterns tested
+**Next steps:** Read queries (#5-7), write debt mutation (#8), warmth math (#9)
 
 ## What's Built
+
+### convex/strainExtractor.ts
+✅ Extractor function + tests (Issue #15 complete)
+- Detects all six strain patterns by rule
+- Returns site, debt, kind for each detection
+- Can return empty (clean text passes)
+- Tested: flat prose (empty), both/and (RESOLVE_TO_PARADOX), Kerf's passage (INFLATION_BY_NAMING)
+- Ready for import by #9, #10, #13
 
 ### convex/schema.ts
 Five tables live:
@@ -52,33 +61,32 @@ Five tables live:
 - #11-12: Instrumentation (log OpenRouter, budget query)
 - #13-14: Findings (record mutation, first entry HITL)
 
-## Build Queue (Revised After Grill)
+## Build Queue (Revised After Grill, Updated 2026-05-30 Post-Extractor)
 
 **Dependency tree:**
 ```
 #2,#3,#4 (schemas) ✅
+#15 (strain extractor) ✅
     ↓
-#15 (strain extractor) ← NEW
-    ↓
-#5-7 (queries), #8 (write debt)
+#5-7 (queries), #8 (write debt) ← NEXT
     ↓
 #9 (warmth math — SLOW ONE)
-#10 (felt audit — depends on #15)
+#10 (felt audit — depends on #15) ✅ ready
     ↓
 #11-12 (instrumentation & meter)
-#13 (record findings — depends on #15)
+#13 (record findings — depends on #15) ✅ ready
     ↓
 #14 (first findings entry — DEFERRED, HITL-deferred, wait for milestone)
 ```
 
 **Next to build:**
-1. #15: Strain extractor (infrastructure, no blockers, unblocks audit logic)
-2. #5-7: Read queries
+1. ✅ #15: Strain extractor (complete, all tests pass)
+2. #5-7: Read queries (reddest debts, have-I-cut-here-before, what-did-last-me-say)
 3. #8: Write debt
-4. #9: Warmth math (held provisionally)
-5. #10: Felt audit (depends on #15)
-6. #11-12: Instrumentation
-7. #13: Record findings (depends on #15)
+4. #9: Warmth math (held provisionally for real-data observation)
+5. #10: Felt audit (now unblocked; depends on #15 ✅)
+6. #11-12: Instrumentation & meter query
+7. #13: Record findings (now unblocked; depends on #15 ✅)
 8. #14: First findings entry (deferred, start after #5-8 prove the order works)
 
 ### TBD — Supporting Systems
