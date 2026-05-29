@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { extractStrains } from "./strainExtractor";
+import { calculateTokenCost } from "./tokenCost";
 
 // Issue #8: writeDebt
 // Plain CRUD to insert a detected strain into held_field.
@@ -67,5 +68,35 @@ export const auditFelt = mutation({
     }
 
     return { logged_strains, is_honest: logged_strains.length === 0 };
+  },
+});
+
+// Issue #11: logTokenUsage
+// Instrumentation: log OpenRouter API call metrics to token_usage.
+
+export const logTokenUsage = mutation({
+  args: {
+    action_type: v.string(), // "consultant_respond" or "invite_self_revision"
+    model: v.string(), // model ID used
+    input_tokens: v.number(),
+    output_tokens: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const cost_usd = calculateTokenCost(
+      args.input_tokens,
+      args.output_tokens,
+      args.model
+    );
+
+    const id = await ctx.db.insert("token_usage", {
+      timestamp: Date.now(),
+      action_type: args.action_type,
+      model: args.model,
+      input_tokens: args.input_tokens,
+      output_tokens: args.output_tokens,
+      cost_usd,
+    });
+
+    return { id, cost_usd };
   },
 });
