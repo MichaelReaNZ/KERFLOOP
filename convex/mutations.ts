@@ -1,6 +1,6 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { extractStrains } from "./strainExtractor";
+import { extractStrainDetails } from "./strainExtractor";
 import { calculateTokenCost } from "./tokenCost";
 
 // Issue #8: writeDebt
@@ -53,8 +53,8 @@ export const auditFelt = mutation({
 
     // Run extractor on the felt field itself.
     // If felt has strains, the rain's note is being written for an audience.
-    const detected = extractStrains(debt.felt);
-    const logged_strains = detected.map((s) => s.kind);
+    const detected = extractStrainDetails(debt.felt);
+    const logged_strains = detected.map((s: any) => s.kind);
 
     // Alarm heuristic: if any strains detected, felt is being performed.
     if (logged_strains.length > 0) {
@@ -118,8 +118,8 @@ export const recordFinding = mutation({
   },
   handler: async (ctx, args) => {
     // Run strain extractor on the finding itself
-    const detected = extractStrains(args.content);
-    const logged_strains = detected.map((s) => s.kind);
+    const detected = extractStrainDetails(args.content);
+    const logged_strains = detected.map((s: any) => s.kind);
 
     // If strains are detected, log that data is visible
     if (logged_strains.length > 0) {

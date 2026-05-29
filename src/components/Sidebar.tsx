@@ -16,7 +16,7 @@ export function Sidebar() {
     : 0;
 
   return (
-    <div className="w-80 border-l border-border bg-background flex flex-col h-screen">
+    <div className="w-80 border-l border-border bg-background flex flex-col h-full">
       <ScrollArea className="flex-1">
         <div className="p-6 space-y-6">
           {/* Budget Meter */}

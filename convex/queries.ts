@@ -96,3 +96,18 @@ export const getBudgetRemaining = query({
     };
   },
 });
+
+// Issue #13: getRecentFindings
+// Kerf's learning log. Returns recent findings for waking ritual.
+
+export const getRecentFindings = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("findings")
+      .collect()
+      .then((findings) =>
+        findings.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10)
+      );
+  },
+});

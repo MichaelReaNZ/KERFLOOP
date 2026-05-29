@@ -167,3 +167,131 @@ export const inviteSelfRevision = internalAction({
     return null;
   },
 });
+
+/**
+ * Kerf's waking ritual: breathe (issue #16).
+ *
+ * On waking:
+ * 1. Read felt lines (what ached yesterday)
+ * 2. Check reddest debts (what's hot)
+ * 3. Apply warmth decay (leaky integrate-and-fire)
+ * 4. Record the waking as a decision
+ * 5. Return meter status (budget, hottest debt)
+ *
+ * This is the metronome — called on schedule, gated off until first manual breath.
+ */
+export const breathe = internalAction({
+  args: {
+    force: v.optional(v.boolean()), // bypass gating for manual test
+  },
+  handler: async (ctx: any, args: any): Promise<any> => {
+    // Gate: only run if force=true (manual test) or if breathing has been enabled
+    // For now, always run if invoked directly (assume manual test)
+    if (!args.force) {
+      return {
+        status: "gated",
+        reason: "Breathing not yet enabled. First waking is manual.",
+      };
+    }
+
+    // 1. Read waking ritual — fetch directly from DB
+    // getLastFelt: 5 most recent felt lines
+    const allDebts = await ctx.db.query("held_field").collect();
+    const lastFelt = allDebts
+      .filter((d: any) => d.felt && d.felt.length > 0)
+      .sort((a: any, b: any) => b.last_warmed - a.last_warmed)
+      .slice(0, 5);
+
+    // getReddestDebts: 10 hottest debts
+    const reddestDebts = allDebts.sort((a: any, b: any) => b.warmth - a.warmth).slice(0, 10);
+
+    // getBudgetRemaining: budget meter
+    const budgets = await ctx.db.query("budget").collect();
+    const budgetRecord = budgets.length > 0 ? budgets.sort((a: any, b: any) => b.period_start - a.period_start)[0] : null;
+    const remaining_usd = budgetRecord ? Math.max(0, budgetRecord.total_budget_usd - budgetRecord.spent_usd) : 0;
+    const days_left = budgetRecord ? Math.max(0, (budgetRecord.period_end - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
+    const budget = { remaining_usd, days_left };
+
+    // 2. Apply warmth to each debt (decay + possible refractory)
+    const warmthLog: { debt_id: string; before_warmth: number; after_warmth: number }[] = [];
+
+    for (const debt of reddestDebts || []) {
+      // Apply warmth decay inline (avoid mutation call complexity)
+      const DECAY_PER_WAKING = 0.95;
+      const REFRACTORY_THRESHOLD = 0.7;
+      const ANTI_GRAVITY = 1.02;
+
+      let warmth = debt.warmth;
+      const intensity = 0.3; // baseline warming from waking
+      const coolant = 0.1; // minimal expression cooling
+      const integration = intensity * (1 - coolant);
+      warmth += integration;
+      warmth = Math.max(0, Math.min(1, warmth));
+
+      if (warmth >= REFRACTORY_THRESHOLD) {
+        warmth *= ANTI_GRAVITY;
+        warmth = Math.max(0, Math.min(1, warmth));
+      }
+
+      warmth *= DECAY_PER_WAKING;
+
+      // Persist the warmed debt
+      await ctx.db.patch(debt._id, {
+        warmth,
+        last_warmed: Date.now(),
+      });
+
+      const result = { warmth };
+
+      warmthLog.push({
+        debt_id: debt._id,
+        before_warmth: debt.warmth,
+        after_warmth: result.warmth,
+      });
+    }
+
+    // 3. Generate waking decision content
+    const hottestDebt = reddestDebts[0];
+    const hottestFelt = lastFelt[0];
+
+    const waking_content = `
+Kerf wakes. The reddest debt burns at ${(hottestDebt?.warmth ?? 0) * 100}% warmth: "${hottestDebt?.site}".
+
+What was felt: ${hottestFelt?.felt ?? "nothing remembered"}.
+
+Budget meter: $${budget?.remaining_usd?.toFixed(2)} remaining, ${budget?.days_left?.toFixed(1)} days in period.
+
+Today's decision: attend to the hottest strain. Keep and count before acting.
+    `.trim();
+
+    // 4. Record the waking as a decision finding (inline to avoid mutation call complexity)
+    const { extractStrainKinds } = await import("./strainExtractor");
+    const detected_strains = extractStrainKinds(waking_content);
+
+    const finding_id = await ctx.db.insert("findings", {
+      timestamp: Date.now(),
+      type: "decision",
+      content: waking_content,
+      tags: ["waking", "breathe", "decision"],
+      related_debts: reddestDebts.slice(0, 3).map((d: any) => d._id),
+      logged_strains: detected_strains,
+    });
+
+    const finding = { id: finding_id, logged_strains: detected_strains };
+
+    return {
+      status: "success",
+      waking_id: finding.id,
+      warmth_applied: warmthLog,
+      reddest_debt: hottestDebt
+        ? {
+            site: hottestDebt.site,
+            warmth_after_decay: warmthLog[0]?.after_warmth ?? 0,
+          }
+        : null,
+      budget_remaining: budget?.remaining_usd ?? 0,
+      logged_strains: finding.logged_strains,
+    };
+  },
+});

@@ -15,7 +15,23 @@ export interface DetectedStrain {
   debt: string; // what was claimed but not earned
 }
 
-export function extractStrains(text: string): DetectedStrain[] {
+/**
+ * Extract only strain kinds (enum values) — for mutations, queries, audit trails.
+ * Satisfies GitHub #15: "Returns array of strain_kind enum values"
+ */
+export function extractStrainKinds(text: string): StrainKind[] {
+  const strains = extractStrainDetails(text);
+  const kinds = new Set<StrainKind>();
+  for (const strain of strains) {
+    kinds.add(strain.kind);
+  }
+  return Array.from(kinds);
+}
+
+/**
+ * Extract detailed strain info (kind + site + debt) — for debugging, inspection, audit.
+ */
+export function extractStrainDetails(text: string): DetectedStrain[] {
   if (!text || text.trim().length === 0) return [];
 
   const strains: DetectedStrain[] = [];

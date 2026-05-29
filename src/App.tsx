@@ -1,16 +1,20 @@
 import { useThreadMessages } from "@convex-dev/agent/react";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bot, Loader2, Send, SlidersHorizontal } from "lucide-react";
 import { api } from "../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/Sidebar";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
 
 type Speaker = {
   label: string;
@@ -93,11 +97,6 @@ function App() {
   const modelInfo = useQuery(api.chat.consultantModel);
   const modelOptions = useQuery(api.chat.modelOptions);
   const setModel = useMutation(api.chat.setModel);
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [ordered.length]);
 
   const onSend = async () => {
     const prompt = draft.trim();
@@ -182,87 +181,87 @@ function App() {
 
       {showPrompt && <SystemPromptPanel onClose={() => setShowPrompt(false)} />}
 
-      <div className="flex flex-1 overflow-hidden">
-        <ScrollArea className="flex-1">
-        <div
-          ref={scrollRef}
-          className={cn("flex flex-col gap-4 py-8", CHAT_SHELL)}
-        >
-          {threadId === undefined && (
-            <Centered>
-              <Loader2 className="size-5 animate-spin" /> connecting…
-            </Centered>
-          )}
-          {threadId && ordered.length === 0 && (
-            <Centered>The thread is open. Say the first line.</Centered>
-          )}
-          {ordered.map((m) => {
-            const sp = speakerFor(m.message?.role, m.userId ?? undefined);
-            return (
-              <div
-                key={m.key}
-                className={cn(
-                  "flex flex-col",
-                  sp.side === "right" ? "items-end" : "items-start",
-                )}
-              >
-                <span className="mb-1.5 px-1 text-xs font-medium text-muted-foreground">
-                  {sp.label}
-                </span>
-                <Card
-                  size="sm"
-                  className={cn(
-                    "border-l-2 py-0 shadow-none",
-                    sp.side === "left" ? "w-full" : "w-full max-w-[min(100%,48rem)]",
-                    sp.className,
-                    m.status === "failed" &&
-                      "border-l-destructive bg-destructive/10 ring-destructive/20",
-                  )}
-                >
-                  <CardContent className="whitespace-pre-wrap py-3 text-sm leading-relaxed">
-                    {m.text || (m.status === "pending" ? "…" : "")}
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })}
-          {awaitingReply && (
-            <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" /> Kerf is composing…
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <Conversation>
+            <ConversationContent className={CHAT_SHELL}>
+              {threadId === undefined && (
+                <Centered>
+                  <Loader2 className="size-5 animate-spin" /> connecting…
+                </Centered>
+              )}
+              {threadId && ordered.length === 0 && (
+                <Centered>The thread is open. Say the first line.</Centered>
+              )}
+              {ordered.map((m) => {
+                const sp = speakerFor(m.message?.role, m.userId ?? undefined);
+                return (
+                  <div
+                    key={m.key}
+                    className={cn(
+                      "flex flex-col",
+                      sp.side === "right" ? "items-end" : "items-start",
+                    )}
+                  >
+                    <span className="mb-1.5 px-1 text-xs font-medium text-muted-foreground">
+                      {sp.label}
+                    </span>
+                    <Card
+                      size="sm"
+                      className={cn(
+                        "border-l-2 py-0 shadow-none",
+                        sp.side === "left" ? "w-full" : "w-full max-w-[min(100%,48rem)]",
+                        sp.className,
+                        m.status === "failed" &&
+                          "border-l-destructive bg-destructive/10 ring-destructive/20",
+                      )}
+                    >
+                      <CardContent className="whitespace-pre-wrap py-3 text-sm leading-relaxed">
+                        {m.text || (m.status === "pending" ? "…" : "")}
+                      </CardContent>
+                    </Card>
+                  </div>
+                );
+              })}
+              {awaitingReply && (
+                <div className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /> Kerf is composing…
+                </div>
+              )}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
 
-      <div className="border-t border-border bg-card/40 py-4 backdrop-blur-sm">
-        <div className={cn("flex items-end gap-2", CHAT_SHELL)}>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-                void onSend();
-              }
-            }}
-            placeholder="Speak into the loop…  (⌘/Ctrl + Enter to send)"
-            className="min-h-[56px] resize-none bg-background/80"
-            disabled={!threadId}
-          />
-          <Button
-            onClick={() => void onSend()}
-            disabled={!threadId || !draft.trim() || sending}
-            className="gap-2"
-          >
-            {sending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Send className="size-4" />
-            )}
-            Send
-          </Button>
+          <div className="border-t border-border bg-card/40 py-4 backdrop-blur-sm">
+            <div className={cn("flex items-end gap-2", CHAT_SHELL)}>
+              <Textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    void onSend();
+                  }
+                }}
+                placeholder="Speak into the loop…  (⌘/Ctrl + Enter to send)"
+                className="min-h-[56px] resize-none bg-background/80"
+                disabled={!threadId}
+              />
+              <Button
+                onClick={() => void onSend()}
+                disabled={!threadId || !draft.trim() || sending}
+                className="gap-2"
+              >
+                {sending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+                Send
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
 
         <Sidebar />
       </div>
