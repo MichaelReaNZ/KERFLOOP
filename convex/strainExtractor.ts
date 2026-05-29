@@ -66,8 +66,6 @@ export function extractStrains(text: string): DetectedStrain[] {
     /\b(warmth|held_field|refractory|decay|debt|strain|extractor|felt|deposit|discharge|waking|thread)\b/gi;
   const affectiveWords =
     /\b(feels|felt|loves|longs|aches|yearns|whispers|speaks|breathes|dreams|mourns|weeps|aches)\b/gi;
-
-  const textLower = text.toLowerCase();
   let systemMatch;
   const systemTermMatches: { index: number; term: string }[] = [];
   while ((systemMatch = systemTerms.exec(text)) !== null) {

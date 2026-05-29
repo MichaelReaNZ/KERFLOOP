@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { Dashboard } from "@/components/Dashboard";
 
 type Speaker = {
   label: string;
@@ -181,7 +182,8 @@ function App() {
 
       {showPrompt && <SystemPromptPanel onClose={() => setShowPrompt(false)} />}
 
-      <ScrollArea className="flex-1">
+      <div className="flex flex-1 overflow-hidden">
+        <ScrollArea className="flex-1">
         <div
           ref={scrollRef}
           className={cn("flex flex-col gap-4 py-8", CHAT_SHELL)}
@@ -260,6 +262,9 @@ function App() {
             Send
           </Button>
         </div>
+      </div>
+
+        <Dashboard />
       </div>
     </div>
   );

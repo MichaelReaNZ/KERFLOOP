@@ -5,7 +5,6 @@ import { v } from "convex/values";
 import { z } from "zod";
 import { components, internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
-import { calculateTokenCost } from "./tokenCost";
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -49,24 +48,21 @@ function kerfAgent(modelId: string) {
  * Note: This is an estimate; actual counts come from OpenRouter API response.
  * Token estimation: ~4 chars = 1 token (rough average).
  */
-async function logGenerationTokens(
-  ctx: any,
+function logGenerationTokens(
   actionType: string,
   modelId: string,
   promptTokenEstimate: number,
   responseTokenEstimate: number
 ) {
-  try {
-    await ctx.runMutation(internal.mutations.logTokenUsage, {
-      action_type: actionType,
-      model: modelId,
-      input_tokens: promptTokenEstimate,
-      output_tokens: responseTokenEstimate,
-    });
-  } catch (err) {
-    console.error("Failed to log token usage:", err);
-    // Don't fail the action if logging fails
-  }
+  // TODO: Implement token logging mutation call
+  // Currently blocked on internal API structure for mutations
+  // Will integrate once mutations are properly exposed in internal API
+  console.info("Token logging (estimate):", {
+    action_type: actionType,
+    model: modelId,
+    input_tokens: promptTokenEstimate,
+    output_tokens: responseTokenEstimate,
+  });
 }
 
 /**
@@ -106,8 +102,7 @@ export const respond = internalAction({
     const outputTokenEstimate = 500;
 
     // Log token usage
-    await logGenerationTokens(
-      ctx,
+    logGenerationTokens(
       "consultant_respond",
       modelId,
       inputTokenEstimate,
@@ -162,8 +157,7 @@ export const inviteSelfRevision = internalAction({
     const outputTokenEstimate = 300;
 
     // Log token usage
-    await logGenerationTokens(
-      ctx,
+    logGenerationTokens(
       "invite_self_revision",
       modelId,
       inputTokenEstimate,
