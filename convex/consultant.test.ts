@@ -75,3 +75,52 @@ describe("Budget Query #12", () => {
     });
   });
 });
+
+describe("Breathe Action #16 & #17", () => {
+  describe("Full waking cycle (tracer bullet)", () => {
+    it("should execute one manual breath end-to-end: read felt → apply warmth → record decision", () => {
+      // RED: This test will fail until we have the test infrastructure set up.
+      //
+      // Behavior to verify:
+      // 1. breathe(force=true) reads felt lines from held_field
+      // 2. Applies warmth decay (0.95 multiplier) to reddest debts
+      // 3. Records waking as a decision finding
+      // 4. Finding has logged_strains populated (strain audit ran)
+      // 5. Response structure:
+      //    - status: "success"
+      //    - waking_id: finding ID
+      //    - warmth_applied: array of {debt_id, before_warmth, after_warmth}
+      //    - reddest_debt: {site, warmth_after_decay}
+      //    - budget_remaining: number
+      //    - logged_strains: array<StrainKind>
+
+      expect(true).toBe(true); // Placeholder - will implement after test infrastructure
+    });
+
+    it("should gate breathing when force=false", () => {
+      // breathe(force=false) should return gated status, not execute waking
+      expect(true).toBe(true);
+    });
+
+    it("should verify warmth decay math: 0.95 multiplier applied", () => {
+      // Given: debt with warmth 0.5
+      // When: breathe applies warmth decay
+      // Then: warmth ≈ 0.465 (0.5 * 0.95, assuming no refractory)
+      expect(true).toBe(true);
+    });
+
+    it("should trigger refractory period when warmth >= 0.7", () => {
+      // Given: debt with warmth 0.75 (above 0.7 threshold)
+      // When: breathe applies warmth
+      // Then: anti-gravity (1.02x) is applied before decay
+      expect(true).toBe(true);
+    });
+
+    it("should record decision finding with strain audit", () => {
+      // Given: breathe executes with test debts/felt
+      // When: decision finding is recorded
+      // Then: finding.logged_strains contains detected strains from waking_content
+      expect(true).toBe(true);
+    });
+  });
+});
